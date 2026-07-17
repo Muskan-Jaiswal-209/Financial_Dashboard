@@ -1,7 +1,7 @@
 // --- BACKEND URL RESOLUTION ---
 const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://127.0.0.1:8000'
-    : 'https://financial-dashboard-backend-bxao.onrender.com';
+    : window.location.origin;
 
 // --- APPLICATION STATE ---
 let session = {

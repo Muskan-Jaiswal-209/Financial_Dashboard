@@ -139,6 +139,12 @@ def get_db_connection():
         url = DATABASE_URL
         if url.startswith("postgres://"):
             url = url.replace("postgres://", "postgresql://", 1)
+        # Ensure sslmode=require for remote databases unless it's a local/dev DB or already has sslmode specified
+        if "localhost" not in url and "127.0.0.1" not in url and "sslmode" not in url:
+            if "?" in url:
+                url += "&sslmode=require"
+            else:
+                url += "?sslmode=require"
         conn = psycopg2.connect(url)
         return PostgresConnectionWrapper(conn)
     else:
@@ -171,6 +177,20 @@ def init_db():
                 unit TEXT DEFAULT ''
             )
         """)
+        
+        # Schema Migration for PostgreSQL: Add missing columns if they don't exist
+        cursor.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'financial_entries'
+        """)
+        columns = [row['column_name'] for row in cursor.fetchall()]
+        
+        if "report_date" not in columns:
+            cursor.execute("ALTER TABLE financial_entries ADD COLUMN report_date TEXT DEFAULT ''")
+            
+        if "unit" not in columns:
+            cursor.execute("ALTER TABLE financial_entries ADD COLUMN unit TEXT DEFAULT ''")
     else:
         # SQLite initialization
         cursor.execute("""
@@ -205,9 +225,10 @@ def init_db():
         if "unit" not in columns:
             cursor.execute("ALTER TABLE financial_entries ADD COLUMN unit TEXT DEFAULT ''")
             
-    # Create default users if empty
-    cursor.execute("SELECT COUNT(*) FROM users")
-    if cursor.fetchone()[0] == 0:
+    # Create default users if empty (use aliases for unified key access in SQLite and Postgres)
+    cursor.execute("SELECT COUNT(*) AS total_users FROM users")
+    res = cursor.fetchone()
+    if res and res["total_users"] == 0:
         pwd_hash = hashlib.sha256("admin123".encode()).hexdigest()
         # Seed test users and master admin
         cursor.execute("INSERT INTO users (phone, password_hash, role) VALUES ('9876543210', ?, 'User Dashboard')", (pwd_hash,))
@@ -216,7 +237,15 @@ def init_db():
     conn.commit()
     conn.close()
 
-init_db()
+try:
+    init_db()
+except Exception as e:
+    import sys
+    import traceback
+    print("CRITICAL: Database initialization failed during startup!", file=sys.stderr)
+    traceback.print_exc(file=sys.stderr)
+    sys.stderr.flush()
+    raise e
 
 # --- SCHEMAS ---
 class LoginRequest(BaseModel):
@@ -399,9 +428,9 @@ def get_master_summary(date: Optional[str] = None):
     
     # If date is not provided, query the latest report_date from database
     if not date:
-        cursor.execute("SELECT MAX(report_date) FROM financial_entries WHERE report_date != ''")
+        cursor.execute("SELECT MAX(report_date) AS max_date FROM financial_entries WHERE report_date != ''")
         res = cursor.fetchone()
-        date = res[0] if res and res[0] else datetime.now().strftime("%Y-%m-%d")
+        date = res["max_date"] if res and res["max_date"] else datetime.now().strftime("%Y-%m-%d")
         
     # Query synchronized entries for specific date
     cursor.execute("SELECT username, particulars, category, amount, unit FROM financial_entries WHERE report_date = ?", (date,))
@@ -443,9 +472,9 @@ def export_master_report(date: Optional[str] = None):
     cursor = conn.cursor()
     
     if not date:
-        cursor.execute("SELECT MAX(report_date) FROM financial_entries WHERE report_date != ''")
+        cursor.execute("SELECT MAX(report_date) AS max_date FROM financial_entries WHERE report_date != ''")
         res = cursor.fetchone()
-        date = res[0] if res and res[0] else datetime.now().strftime("%Y-%m-%d")
+        date = res["max_date"] if res and res["max_date"] else datetime.now().strftime("%Y-%m-%d")
         
     cursor.execute("SELECT username, particulars, category, amount FROM financial_entries WHERE report_date = ?", (date,))
     rows = cursor.fetchall()
