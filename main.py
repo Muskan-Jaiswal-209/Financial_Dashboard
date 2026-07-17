@@ -275,15 +275,38 @@ def register(data: RegisterRequest):
 def login(data: LoginRequest):
     conn = get_db_connection()
     cursor = conn.cursor()
-    pwd_hash = hashlib.sha256(data.password.encode()).hexdigest()
-    cursor.execute("SELECT role FROM users WHERE phone = ? AND password_hash = ?", (data.phone, pwd_hash))
+    cursor.execute("SELECT role, password_hash FROM users WHERE phone = ?", (data.phone,))
     user = cursor.fetchone()
-    conn.close()
     
     if not user:
+        conn.close()
         raise HTTPException(status_code=401, detail="Invalid phone number or password.")
+        
+    stored_pw = user["password_hash"]
+    input_pw_hash = hashlib.sha256(data.password.encode()).hexdigest()
     
+    login_success = False
+    
+    # Check secure hash
+    if input_pw_hash == stored_pw:
+        login_success = True
+    # Check plain-text fallback (for older migrated plain-text passwords)
+    elif data.password == stored_pw:
+        login_success = True
+        # Upgrade plain-text password to hash in database
+        try:
+            cursor.execute("UPDATE users SET password_hash = ? WHERE phone = ?", (input_pw_hash, data.phone))
+            conn.commit()
+        except Exception:
+            pass
+            
+    conn.close()
+    
+    if not login_success:
+        raise HTTPException(status_code=401, detail="Invalid phone number or password.")
+        
     return {"status": "success", "username": f"Branch_{data.phone[-4:]}", "role": user["role"]}
+
 
 
 @app.post("/api/user/parse-excel")
