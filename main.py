@@ -59,56 +59,160 @@ def extract_date_from_df(df) -> str:
     return date.today().strftime("%Y-%m-%d")
 
 # --- DATABASE SETUP ---
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+class PostgresRowWrapper:
+    def __init__(self, data_dict):
+        self.data = data_dict
+        
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            return list(self.data.values())[key]
+        return self.data[key]
+        
+    def keys(self):
+        return self.data.keys()
+        
+    def values(self):
+        return self.data.values()
+        
+    def items(self):
+        return self.data.items()
+        
+    def get(self, key, default=None):
+        return self.data.get(key, default)
+        
+    def __len__(self):
+        return len(self.data)
+        
+    def __iter__(self):
+        return iter(self.data)
+        
+    def __repr__(self):
+        return repr(self.data)
+
+class PostgresCursorWrapper:
+    def __init__(self, cursor):
+        self.cursor = cursor
+        
+    def execute(self, query, params=None):
+        if params is None:
+            params = ()
+        # Convert SQLite ? placeholders to PostgreSQL %s placeholders
+        query = query.replace('?', '%s')
+        self.cursor.execute(query, params)
+        
+    def fetchone(self):
+        row = self.cursor.fetchone()
+        if row is not None:
+            return PostgresRowWrapper(row)
+        return None
+        
+    def fetchall(self):
+        rows = self.cursor.fetchall()
+        return [PostgresRowWrapper(r) for r in rows]
+        
+    def __getattr__(self, name):
+        return getattr(self.cursor, name)
+
+class PostgresConnectionWrapper:
+    def __init__(self, conn):
+        self.conn = conn
+        
+    def cursor(self):
+        from psycopg2.extras import RealDictCursor
+        cursor = self.conn.cursor(cursor_factory=RealDictCursor)
+        return PostgresCursorWrapper(cursor)
+        
+    def commit(self):
+        self.conn.commit()
+        
+    def rollback(self):
+        self.conn.rollback()
+        
+    def close(self):
+        self.conn.close()
+
 def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    if DATABASE_URL:
+        import psycopg2
+        url = DATABASE_URL
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql://", 1)
+        conn = psycopg2.connect(url)
+        return PostgresConnectionWrapper(conn)
+    else:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        return conn
 
 def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
-    # Users table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            phone TEXT PRIMARY KEY,
-            password_hash TEXT NOT NULL,
-            role TEXT NOT NULL
-        )
-    """)
-    # Submissions storage table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS financial_entries (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL,
-            particulars TEXT NOT NULL,
-            category TEXT NOT NULL,
-            amount REAL NOT NULL,
-            last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
     
-    # Schema Migration: Add report_date if not present
-    cursor.execute("PRAGMA table_info(financial_entries)")
-    columns = [row[1] for row in cursor.fetchall()]
-    if "report_date" not in columns:
-        cursor.execute("ALTER TABLE financial_entries ADD COLUMN report_date TEXT DEFAULT ''")
+    if DATABASE_URL:
+        # PostgreSQL initialization
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                phone TEXT PRIMARY KEY,
+                password_hash TEXT NOT NULL,
+                role TEXT NOT NULL
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS financial_entries (
+                id SERIAL PRIMARY KEY,
+                username TEXT NOT NULL,
+                particulars TEXT NOT NULL,
+                category TEXT NOT NULL,
+                amount REAL NOT NULL,
+                last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                report_date TEXT DEFAULT '',
+                unit TEXT DEFAULT ''
+            )
+        """)
+    else:
+        # SQLite initialization
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                phone TEXT PRIMARY KEY,
+                password_hash TEXT NOT NULL,
+                role TEXT NOT NULL
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS financial_entries (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL,
+                particulars TEXT NOT NULL,
+                category TEXT NOT NULL,
+                amount REAL NOT NULL,
+                last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
         
-    # Auto-migrate any existing empty dates to today's date
-    cursor.execute("UPDATE financial_entries SET report_date = ? WHERE report_date = '' OR report_date IS NULL", 
-                   (date.today().strftime("%Y-%m-%d"),))
-                   
-    # Schema Migration: Add unit if not present
-    if "unit" not in columns:
-        cursor.execute("ALTER TABLE financial_entries ADD COLUMN unit TEXT DEFAULT ''")
-    
+        # Schema Migration: Add report_date if not present
+        cursor.execute("PRAGMA table_info(financial_entries)")
+        columns = [row[1] for row in cursor.fetchall()]
+        if "report_date" not in columns:
+            cursor.execute("ALTER TABLE financial_entries ADD COLUMN report_date TEXT DEFAULT ''")
+            
+        # Auto-migrate any existing empty dates to today's date
+        cursor.execute("UPDATE financial_entries SET report_date = ? WHERE report_date = '' OR report_date IS NULL", 
+                       (date.today().strftime("%Y-%m-%d"),))
+                       
+        # Schema Migration: Add unit if not present
+        if "unit" not in columns:
+            cursor.execute("ALTER TABLE financial_entries ADD COLUMN unit TEXT DEFAULT ''")
+            
     # Create default users if empty
     cursor.execute("SELECT COUNT(*) FROM users")
     if cursor.fetchone()[0] == 0:
         pwd_hash = hashlib.sha256("admin123".encode()).hexdigest()
         # Seed test users and master admin
-        cursor.execute("INSERT INTO users VALUES ('9876543210', ?, 'User Dashboard')", (pwd_hash,))
-        cursor.execute("INSERT INTO users VALUES ('8888888888', ?, 'User Dashboard')", (pwd_hash,))
-        cursor.execute("INSERT INTO users VALUES ('9999999999', ?, 'Master Executive Dashboard')", (pwd_hash,))
+        cursor.execute("INSERT INTO users (phone, password_hash, role) VALUES ('9876543210', ?, 'User Dashboard')", (pwd_hash,))
+        cursor.execute("INSERT INTO users (phone, password_hash, role) VALUES ('8888888888', ?, 'User Dashboard')", (pwd_hash,))
+        cursor.execute("INSERT INTO users (phone, password_hash, role) VALUES ('9999999999', ?, 'Master Executive Dashboard')", (pwd_hash,))
     conn.commit()
     conn.close()
 
