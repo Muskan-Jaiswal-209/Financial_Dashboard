@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cash Flow Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts for Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <!-- 1. LOGIN SCREEN -->
+        <div id="login-view" class="view active">
+            <div class="login-card">
+                <div class="login-header">
+                    <span class="icon">🔒</span>
+                    <h1>Cash Flow Dashboard</h1>
+                    <p>Use registered phone credentials to sign in to your workspace.</p>
+                </div>
+                
+                <!-- Sign In Form -->
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="phone">🔑 Phone Number</label>
+                        <input type="text" id="phone" placeholder="e.g., 9876543210" required autocomplete="tel">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">🔑 Password</label>
+                        <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+                    </div>
+                    
+                    <div id="login-error" class="error-msg hidden"></div>
+                    
+                    <button type="submit" class="btn btn-primary">Sign In Securely</button>
+                    <p class="auth-toggle">Don't have an account? <a href="#" id="go-to-register">Sign Up</a></p>
+                </form>
+
+                <!-- Sign Up Form (Hidden by default) -->
+                <form id="register-form" class="hidden">
+                    <div class="form-group">
+                        <label for="reg-phone">🔑 Phone Number</label>
+                        <input type="text" id="reg-phone" placeholder="e.g., 9876543210" required autocomplete="tel">
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-password">🔑 Password</label>
+                        <input type="password" id="reg-password" placeholder="Create Password" required autocomplete="new-password">
+                    </div>
+
+                    
+                    <div id="reg-status" class="status-msg hidden" style="margin-bottom: 1.25rem; font-size: 0.875rem;"></div>
+                    
+                    <button type="submit" class="btn btn-primary">Create Account</button>
+                    <p class="auth-toggle">Already have an account? <a href="#" id="go-to-login">Sign In</a></p>
+                </form>
+            </div>
+        </div>
+
+        <!-- 2. MAIN APPLICATION WORKSPACE -->
+        <div id="dashboard-view" class="view hidden">
+            <!-- Global Navigation -->
+            <header class="main-nav">
+                <div class="logo">📊 CASH FLOW DASHBOARD</div>
+                <div class="session-info">
+                    Active Session: <strong id="session-display">Branch_3210 (User Dashboard)</strong>
+                    <button id="logout-btn" class="btn btn-link">← Logout / Disconnect</button>
+                </div>
+            </header>
+
+            <main class="container">
+                <!-- INTERFACE A: USER PORTAL -->
+                <div id="user-portal" class="portal-section hidden">
+                    <div class="section-header">
+                        <h2>📝 Daily Operations Form</h2>
+                        <p>Fill in operations data manually or upload a sheet to auto-fill the matrix.</p>
+                    </div>
+
+                    <!-- Reporting Date Selector -->
+                    <div class="importer-card" style="display: flex; align-items: center; gap: 1rem; padding: 1.25rem; margin-bottom: 1.5rem;">
+                        <label for="user-date-filter" style="font-weight: 500; font-size: 0.9rem;">📅 Reporting Date:</label>
+                        <input type="date" id="user-date-filter" class="table-input" style="max-width: 220px; border: 1px solid #e2e8f0; padding: 0.5rem 0.875rem;">
+                        <span style="font-size: 0.8rem; color: #64748b;">(Select a date to view/edit past submissions, e.g., yesterday or day before yesterday)</span>
+                    </div>
+
+                    <!-- Excel Importer -->
+                    <div class="importer-card">
+                        <label for="excel-file" class="file-uploader">
+                            <span class="uploader-icon">📥</span>
+                            <span class="uploader-text">Drop operational sheets here or click to browse</span>
+                            <span class="uploader-sub">Supports Excel formats (.xlsx, .xls)</span>
+                            <input type="file" id="excel-file" accept=".xlsx, .xls">
+                        </label>
+                        <div id="upload-status" class="status-msg hidden"></div>
+                    </div>
+
+                    <!-- Interactive Data Grid -->
+                    <div class="grid-card">
+                        <h3>🎛️ Dynamic Data Matrix</h3>
+                        <div class="table-container">
+                            <table id="operations-table">
+                                <thead>
+                                    <tr>
+                                        <th>Financial Line Item</th>
+                                        <th>Group Category</th>
+                                        <th>Unit</th>
+                                        <th>Amount (Rs.) / Value</th>
+                                        <th class="actions-col">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="operations-body">
+                                    <!-- Dynamic rows loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="grid-actions">
+                            <button id="add-row-btn" class="btn btn-secondary">+ Add Financial Item</button>
+                            <button id="sync-btn" class="btn btn-primary">📤 Sync Data to Master Hub</button>
+                        </div>
+                        <div id="sync-status" class="status-msg hidden"></div>
+                    </div>
+                </div>
+
+                <!-- INTERFACE B: EXECUTIVE PORTAL -->
+                <div id="executive-portal" class="portal-section hidden">
+                    <div class="section-header">
+                        <h2>🛡️ Executive Consolidated Master Hub</h2>
+                        <p>Real-time consolidated operational aggregates across all reporting branches.</p>
+                    </div>
+
+                    <!-- Master Date Filter -->
+                    <div class="importer-card" style="display: flex; align-items: center; gap: 1rem; padding: 1.25rem; margin-bottom: 1.5rem;">
+                        <label for="master-date-filter" style="font-weight: 500; font-size: 0.9rem;">📅 Consolidated Date Filter:</label>
+                        <input type="date" id="master-date-filter" class="table-input" style="max-width: 220px; border: 1px solid #e2e8f0; padding: 0.5rem 0.875rem;">
+                        <span style="font-size: 0.8rem; color: #64748b;">(Displays consolidation report for the selected operating calendar day)</span>
+                    </div>
+
+                    <!-- Executive Sub-Navigation -->
+                    <div class="sub-nav">
+                        <button id="tab-consolidated" class="sub-nav-tab active">Consolidated Output Grid</button>
+                        <button id="tab-individual" class="sub-nav-tab">Individual Branch Filter</button>
+                    </div>
+
+                    <!-- VIEW A: CONSOLIDATED DASHBOARD -->
+                    <div id="exec-consolidated-view" class="tab-view">
+                        <!-- KPI Cards Dashboard -->
+                        <div class="kpi-dashboard">
+                            <div class="kpi-card">
+                                <span class="kpi-label">Consolidated Volume (MT)</span>
+                                <span class="kpi-value" id="kpi-volume">0.00</span>
+                            </div>
+                            <div class="kpi-card">
+                                <span class="kpi-label">Gross Revenue Receipts</span>
+                                <span class="kpi-value" id="kpi-sales">₹ 0.00</span>
+                            </div>
+                            <div class="kpi-card">
+                                <span class="kpi-label">Total Expenses Outflow</span>
+                                <span class="kpi-value text-expense" id="kpi-expenses">₹ 0.00</span>
+                            </div>
+                        </div>
+
+                        <!-- Consolidation Output Grid -->
+                        <div class="grid-card">
+                            <div class="grid-header-actions">
+                                <h3>📋 Consolidation Output Grid</h3>
+                                <button id="export-btn" class="btn btn-primary">📥 Export Consolidated Report (.xlsx)</button>
+                            </div>
+                            <div id="export-status" class="status-msg hidden"></div>
+                            <div class="table-container">
+                                <table id="consolidation-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Financial Line Item</th>
+                                            <th>Consolidated Amount (Rs.)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="consolidation-body">
+                                        <!-- Simplified consolidated records loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div id="no-records-msg" class="info-banner hidden">
+                                No branches have completed synchronization reports for this current operating period.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- VIEW B: INDIVIDUAL BRANCH FILTER -->
+                    <div id="exec-individual-view" class="tab-view hidden">
+                        <!-- Filter Selection Card -->
+                        <div class="importer-card" style="display: flex; align-items: center; gap: 1rem; padding: 1.25rem;">
+                            <label for="branch-selector" style="font-weight: 500; font-size: 0.9rem;">Select Reporting Branch:</label>
+                            <select id="branch-selector" class="table-select" style="max-width: 320px; border: 1px solid #e2e8f0; padding: 0.5rem 0.875rem;">
+                                <!-- Branch options dynamically populated here -->
+                            </select>
+                        </div>
+
+                        <!-- Individual KPI Dashboard -->
+                        <div class="kpi-dashboard">
+                            <div class="kpi-card">
+                                <span class="kpi-label">Branch Volume (MT)</span>
+                                <span class="kpi-value" id="ind-kpi-volume">0.00</span>
+                            </div>
+                            <div class="kpi-card">
+                                <span class="kpi-label">Branch Gross Revenue</span>
+                                <span class="kpi-value" id="ind-kpi-sales">₹ 0.00</span>
+                            </div>
+                            <div class="kpi-card">
+                                <span class="kpi-label">Branch Total Expenses</span>
+                                <span class="kpi-value text-expense" id="ind-kpi-expenses">₹ 0.00</span>
+                            </div>
+                        </div>
+
+                        <!-- Individual Grid Table -->
+                        <div class="grid-card">
+                            <h3 id="ind-grid-title">📋 Branch Operational Report</h3>
+                            <div class="table-container">
+                                <table id="individual-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Financial Line Item</th>
+                                            <th>Group Category</th>
+                                            <th>Unit</th>
+                                            <th>Amount (Rs.)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="individual-body">
+                                        <!-- Individual branch rows loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div id="ind-no-records-msg" class="info-banner hidden">
+                                Please select a branch to view its operational report.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,494 @@
+/* --- Reset & Global Base Styles --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #f8fafc;
+    color: #0f172a;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+#app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- Utilities --- */
+.hidden {
+    display: none !important;
+}
+
+.text-expense {
+    color: #0f172a !important; /* Keep expenses in formal dark text, no bright red colors */
+}
+
+/* --- Buttons --- */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+
+.btn-primary {
+    background-color: #0f172a;
+    color: #ffffff;
+    border-color: #0f172a;
+}
+
+.btn-primary:hover {
+    background-color: #1e293b;
+    border-color: #1e293b;
+}
+
+.btn-secondary {
+    background-color: #ffffff;
+    color: #0f172a;
+    border-color: #e2e8f0;
+}
+
+.btn-secondary:hover {
+    background-color: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.btn-link {
+    background: none;
+    border: none;
+    color: #475569;
+    padding: 0;
+    font-size: 0.875rem;
+}
+
+.btn-link:hover {
+    color: #0f172a;
+    text-decoration: underline;
+}
+
+.btn-danger {
+    background-color: #ffffff;
+    color: #475569;
+    border-color: #e2e8f0;
+}
+
+.btn-danger:hover {
+    background-color: #fef2f2;
+    color: #991b1b;
+    border-color: #fee2e2;
+}
+
+/* --- View Layouts --- */
+.view {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- 1. Login Screen --- */
+#login-view {
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.login-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 10px 15px -3px rgba(0, 0, 0, 0.03);
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.login-header .icon {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 1rem;
+}
+
+.login-header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.025em;
+    margin-bottom: 0.5rem;
+}
+
+.login-header p {
+    font-size: 0.875rem;
+    color: #475569;
+}
+
+.form-group {
+    margin-bottom: 1.25rem;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: #334155;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    outline: none;
+    background-color: #ffffff;
+    color: #0f172a;
+    transition: border-color 0.15s ease-in-out;
+}
+
+.form-group input:focus {
+    border-color: #0f172a;
+}
+
+.error-msg {
+    background-color: #fef2f2;
+    border: 1px solid #fee2e2;
+    color: #991b1b;
+    font-size: 0.875rem;
+    padding: 0.75rem;
+    border-radius: 6px;
+    margin-bottom: 1.25rem;
+}
+
+.login-card .btn-primary {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 0.95rem;
+    margin-top: 0.5rem;
+}
+
+/* --- 2. Main Workspace Layout --- */
+.main-nav {
+    background-color: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.main-nav .logo {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+}
+
+.session-info {
+    font-size: 0.875rem;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.container {
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.section-header {
+    margin-bottom: 1.5rem;
+}
+
+.section-header h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    margin-bottom: 0.25rem;
+}
+
+.section-header p {
+    font-size: 0.875rem;
+    color: #475569;
+}
+
+/* --- Cards --- */
+.importer-card, .grid-card {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.grid-card h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+/* --- Drag & Drop Uploader --- */
+.file-uploader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    padding: 2rem;
+    cursor: pointer;
+    background-color: #f8fafc;
+    transition: all 0.2s ease;
+}
+
+.file-uploader:hover {
+    border-color: #0f172a;
+    background-color: #f1f5f9;
+}
+
+.file-uploader input {
+    display: none;
+}
+
+.uploader-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.uploader-text {
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.uploader-sub {
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.status-msg {
+    font-size: 0.875rem;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    margin-top: 1rem;
+}
+
+.status-msg.success {
+    background-color: #f0fdf4;
+    border: 1px solid #dcfce7;
+    color: #166534;
+}
+
+.status-msg.error {
+    background-color: #fef2f2;
+    border: 1px solid #fee2e2;
+    color: #991b1b;
+}
+
+/* --- Interactive Grid/Table System --- */
+.table-container {
+    overflow-x: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    margin-bottom: 1.25rem;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    text-align: left;
+}
+
+th {
+    background-color: #f8fafc;
+    font-weight: 600;
+    color: #475569;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.75rem 1rem;
+}
+
+td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: middle;
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+/* Editable Grid Fields */
+.table-input {
+    width: 100%;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.875rem;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.table-input:focus {
+    border-color: #cbd5e1;
+    background-color: #f8fafc;
+}
+
+.table-select {
+    width: 100%;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.875rem;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+    outline: none;
+    background-color: #ffffff;
+    transition: border-color 0.15s ease;
+}
+
+.table-select:focus {
+    border-color: #cbd5e1;
+}
+
+.actions-col {
+    width: 80px;
+    text-align: center;
+}
+
+.grid-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* --- Executive Portal Components --- */
+.kpi-dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.kpi-card {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.kpi-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #475569;
+    margin-bottom: 0.5rem;
+}
+
+.kpi-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.03em;
+}
+
+.grid-header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.grid-header-actions h3 {
+    margin-bottom: 0;
+}
+
+.info-banner {
+    background-color: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    color: #475569;
+    text-align: center;
+    padding: 2.5rem;
+    border-radius: 6px;
+    font-size: 0.95rem;
+}
+
+/* Zebra striping for Executive read-only reports */
+#consolidation-table tbody tr:nth-child(even) {
+    background-color: #f8fafc;
+}
+
+.auth-toggle {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-size: 0.85rem;
+    color: #475569;
+}
+
+.auth-toggle a {
+    color: #0f172a;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.auth-toggle a:hover {
+    text-decoration: underline;
+}
+
+/* --- Executive Sub-Navigation Tabs --- */
+.sub-nav {
+    display: flex;
+    gap: 1.5rem;
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.sub-nav-tab {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: #64748b;
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 1rem 0.5rem;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+
+.sub-nav-tab:hover {
+    color: #0f172a;
+}
+
+.sub-nav-tab.active {
+    color: #0f172a;
+    border-bottom-color: #0f172a;
+    font-weight: 600;
+}
+
+.tab-view {
+    display: block;
+}
+
+.tab-view.hidden {
+    display: none !important;
+}
+
+

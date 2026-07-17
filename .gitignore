@@ -10,7 +10,7 @@ __pycache__/
 *.pyd
 
 # Local Database
-backend/database.db
+database.db
 
 # IDE files
 .vscode/
