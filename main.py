@@ -241,15 +241,22 @@ def init_db():
         if "unit" not in columns:
             cursor.execute("ALTER TABLE financial_entries ADD COLUMN unit TEXT DEFAULT ''")
             
-    # Create default users if empty (use aliases for unified key access in SQLite and Postgres)
-    cursor.execute("SELECT COUNT(*) AS total_users FROM users")
-    res = cursor.fetchone()
-    if res and res["total_users"] == 0:
-        pwd_hash = hashlib.sha256("admin123".encode()).hexdigest()
-        # Seed test users and master admin
-        cursor.execute("INSERT INTO users (phone, password_hash, role) VALUES ('9876543210', ?, 'User Dashboard')", (pwd_hash,))
-        cursor.execute("INSERT INTO users (phone, password_hash, role) VALUES ('8888888888', ?, 'User Dashboard')", (pwd_hash,))
-        cursor.execute("INSERT INTO users (phone, password_hash, role) VALUES ('9999999999', ?, 'Master Executive Dashboard')", (pwd_hash,))
+    # Reset/Clear database and seed new credentials if the new master user does not exist yet
+    cursor.execute("SELECT 1 FROM users WHERE phone = ?", ('1234567891',))
+    if not cursor.fetchone():
+        print("Performing fresh database activation and seeding credentials...")
+        # Clear existing tables for a clean start
+        cursor.execute("DELETE FROM users")
+        cursor.execute("DELETE FROM financial_entries")
+        
+        # Seed new master admin (Phone: 1234567891, Password: admin12345)
+        master_hash = hashlib.sha256("admin12345".encode()).hexdigest()
+        cursor.execute("INSERT INTO users (phone, password_hash, role) VALUES ('1234567891', ?, 'Master Executive Dashboard')", (master_hash,))
+        
+        # Seed default branch users (Password: admin123)
+        user_hash = hashlib.sha256("admin123".encode()).hexdigest()
+        cursor.execute("INSERT INTO users (phone, password_hash, role) VALUES ('9876543210', ?, 'User Dashboard')", (user_hash,))
+        cursor.execute("INSERT INTO users (phone, password_hash, role) VALUES ('8888888888', ?, 'User Dashboard')", (user_hash,))
     conn.commit()
     conn.close()
 
