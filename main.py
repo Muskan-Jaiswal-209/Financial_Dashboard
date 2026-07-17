@@ -135,18 +135,27 @@ class PostgresConnectionWrapper:
 
 def get_db_connection():
     if DATABASE_URL:
-        import psycopg2
-        url = DATABASE_URL
-        if url.startswith("postgres://"):
-            url = url.replace("postgres://", "postgresql://", 1)
-        # Ensure sslmode=require for remote databases unless it's a local/dev DB or already has sslmode specified
-        if "localhost" not in url and "127.0.0.1" not in url and "sslmode" not in url:
-            if "?" in url:
-                url += "&sslmode=require"
-            else:
-                url += "?sslmode=require"
-        conn = psycopg2.connect(url)
-        return PostgresConnectionWrapper(conn)
+        try:
+            import psycopg2
+            url = DATABASE_URL
+            if url.startswith("postgres://"):
+                url = url.replace("postgres://", "postgresql://", 1)
+            # Ensure sslmode=require for remote databases unless it's a local/dev DB or already has sslmode specified
+            if "localhost" not in url and "127.0.0.1" not in url and "sslmode" not in url:
+                if "?" in url:
+                    url += "&sslmode=require"
+                else:
+                    url += "?sslmode=require"
+            conn = psycopg2.connect(url)
+            return PostgresConnectionWrapper(conn)
+        except Exception as db_err:
+            import sys
+            print(f"CRITICAL: Failed to connect to PostgreSQL database: {db_err}", file=sys.stderr)
+            print("Falling back to SQLite database connection.", file=sys.stderr)
+            sys.stderr.flush()
+            conn = sqlite3.connect(DB_PATH)
+            conn.row_factory = sqlite3.Row
+            return conn
     else:
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
@@ -156,7 +165,9 @@ def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    if DATABASE_URL:
+    is_postgres = isinstance(conn, PostgresConnectionWrapper)
+    
+    if is_postgres:
         # PostgreSQL initialization
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
@@ -179,18 +190,23 @@ def init_db():
         """)
         
         # Schema Migration for PostgreSQL: Add missing columns if they don't exist
-        cursor.execute("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'financial_entries'
-        """)
-        columns = [row['column_name'] for row in cursor.fetchall()]
-        
-        if "report_date" not in columns:
-            cursor.execute("ALTER TABLE financial_entries ADD COLUMN report_date TEXT DEFAULT ''")
+        try:
+            cursor.execute("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'financial_entries' AND table_schema = 'public'
+            """)
+            columns = [row['column_name'] for row in cursor.fetchall()]
             
-        if "unit" not in columns:
-            cursor.execute("ALTER TABLE financial_entries ADD COLUMN unit TEXT DEFAULT ''")
+            if "report_date" not in columns:
+                cursor.execute("ALTER TABLE financial_entries ADD COLUMN report_date TEXT DEFAULT ''")
+                
+            if "unit" not in columns:
+                cursor.execute("ALTER TABLE financial_entries ADD COLUMN unit TEXT DEFAULT ''")
+        except Exception as migration_err:
+            import sys
+            print(f"WARNING: PostgreSQL schema migration failed: {migration_err}", file=sys.stderr)
+            sys.stderr.flush()
     else:
         # SQLite initialization
         cursor.execute("""
@@ -245,7 +261,6 @@ except Exception as e:
     print("CRITICAL: Database initialization failed during startup!", file=sys.stderr)
     traceback.print_exc(file=sys.stderr)
     sys.stderr.flush()
-    raise e
 
 # --- SCHEMAS ---
 class LoginRequest(BaseModel):
